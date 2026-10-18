@@ -3,7 +3,7 @@
 | Metadata Field | Value |
 | :--- | :--- |
 | **Document ID** | `WEBALOO-SDI-001` |
-| **Version** | `1.0.0` |
+| **Version** | `1.0.1` |
 | **Status** | `IMPLEMENTED & VERIFIED` |
 | **System Class** | Local-First, Filesystem-Backed 2D Spatial Bookmark Manager |
 | **Source Specs** | [Briefing.md](file:///C:/Dev/github/philippeback/webaloo/Briefing.md), [WebalooSpec.md](file:///C:/Dev/github/philippeback/webaloo/WebalooSpec.md), [WebalooEARS-Spec.md](file:///C:/Dev/github/philippeback/webaloo/WebalooEARS-Spec.md) |
@@ -19,10 +19,10 @@ Webaloo is governed by a strict **isomorphism between the on-disk directory hier
 
 | ID | Invariant Name | Formal Statement | Enforcing Component |
 | :--- | :--- | :--- | :--- |
-| **`INV-01`** | **Bijective Entity Mapping** | $\forall \text{ mix } M \in \text{RootDir}: M \iff \text{Subdir}(M) \land \neg\text{startsWith}(M, \{'.', '\_'\})$. Every non-hidden, non-system subdirectory is a webmix; every non-`_` `.json` file inside $M$ is a tile. | [`Storage._is_valid_mix_dir`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L126-L128), [`Storage.list_tiles`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L186-L199) |
-| **`INV-02`** | **Canonical Stem Identity** | $\forall \text{ tile } T \in M: T.\text{id} \equiv \text{stem}(\text{filename}(T))$. The filename stem is the single authoritative primary key within a webmix namespace. | [`Storage._read_tile_file`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L201-L265) |
-| **`INV-03`** | **Spatial Non-Collision** | $\forall T_i, T_j \in M \ (i \neq j): (T_i.x, T_i.y) \neq (T_j.x, T_j.y)$ under UI operations, and $0 \le T.x < M.\text{grid\_cols} \land 0 \le T.y < M.\text{grid\_rows}$. | [`Storage.create_tile`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L372-L426), [`Storage.move_tile`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L455-L497) |
-| **`INV-04`** | **Zero-Gravity Preservation** | Empty slots $(x, y)$ remain unoccupied until explicitly targeted (`float: true` semantics). No automatic upward or leftward compaction ever occurs. | [`_build_grid_matrix`](file:///C:/Dev/github/philippeback/webaloo/webaloo/app.py#L33-L42), [`workspace.html`](file:///C:/Dev/github/philippeback/webaloo/webaloo/templates/partials/workspace.html#L90-L162) |
+| **`INV-01`** | **Bijective Entity Mapping** | `∀ mix M ∈ RootDir : M ⟺ is_dir(M) ∧ ¬starts_with(M, {'.', '_'})`. Every non-hidden, non-system subdirectory is a webmix; every non-`_` `.json` file inside `M` is a tile. | [`Storage._is_valid_mix_dir`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L126-L128), [`Storage.list_tiles`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L186-L199) |
+| **`INV-02`** | **Canonical Stem Identity** | `∀ tile T ∈ M : T.id ≡ stem(filename(T))`. The filename stem is the single authoritative primary key within a webmix namespace. | [`Storage._read_tile_file`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L201-L265) |
+| **`INV-03`** | **Spatial Non-Collision** | `∀ T_i, T_j ∈ M (i ≠ j) : (T_i.x, T_i.y) ≠ (T_j.x, T_j.y)` under UI operations, and `0 ≤ T.x < M.grid_cols ∧ 0 ≤ T.y < M.grid_rows`. | [`Storage.create_tile`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L372-L426), [`Storage.move_tile`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L455-L497) |
+| **`INV-04`** | **Zero-Gravity Preservation** | Empty slots `(x, y)` remain unoccupied until explicitly targeted (`float: true` semantics). No automatic upward or leftward compaction ever occurs. | [`_build_grid_matrix`](file:///C:/Dev/github/philippeback/webaloo/webaloo/app.py#L33-L42), [`workspace.html`](file:///C:/Dev/github/philippeback/webaloo/webaloo/templates/partials/workspace.html#L90-L162) |
 | **`INV-05`** | **Deterministic Serialization** | Every JSON write uses UTF-8 encoding, `ensure_ascii=False`, `indent=2`, and a trailing newline (`\n`) to guarantee minimal, human-readable Git diffs. | [`Storage._write_json`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L120-L124) |
 | **`INV-06`** | **Fault-Isolated Parsing** | A corrupt or schema-invalid `{tile}.json` or `_mix.json` never aborts directory scanning; malformed tiles are logged and skipped, and missing/corrupt `_mix.json` files are self-healed with defaults. | [`Storage._load_or_create_mix_meta`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L130-L163), [`Storage._read_tile_file`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L201-L265) |
 | **`INV-07`** | **Loop-Free File Sync** | Internal API writes record a monotonic timestamp (`_last_internal_write`). The file watcher suppresses echo broadcasts within the 450ms debounce window while broadcasting all genuine external modifications. | [`Storage.mark_internal_write`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L61-L64), [`FileWatcherBroadcaster._watch_loop`](file:///C:/Dev/github/philippeback/webaloo/webaloo/watcher.py#L57-L78) |
@@ -44,23 +44,23 @@ flowchart TB
     end
 
     subgraph Server["FastAPI Application Layer (webaloo/app.py)"]
-        HTMLRoutes["HTML / HTMX View Router\nGET /, GET /mix/{slug}"]
-        MixAPI["Webmix REST API\nPOST/PUT/DELETE /api/mixes/*"]
-        TileAPI["Tile & Spatial REST API\nPOST/PUT/DELETE /api/mixes/{slug}/tiles/*"]
-        IconAPI["Icon & Asset Pipeline\nPOST /api/icons/fetch, /upload, GET /icons/*"]
-        SearchAPI["Global Search Engine\nGET /api/search?q=..."]
-        SSEEndpoint["SSE Stream Endpoint\nGET /api/events"]
+        HTMLRoutes["HTML & HTMX View Router (GET /, GET /mix/{slug})"]
+        MixAPI["Webmix REST API (POST/PUT/DELETE /api/mixes/*)"]
+        TileAPI["Tile & Spatial REST API (/api/mixes/{slug}/tiles/*)"]
+        IconAPI["Icon & Asset Pipeline (/api/icons/fetch, /upload, /icons/*)"]
+        SearchAPI["Global Search Engine (GET /api/search)"]
+        SSEEndpoint["SSE Stream Endpoint (GET /api/events)"]
     end
 
     subgraph Core["Domain & Persistence Services"]
-        Storage["Storage Engine (webaloo/storage.py)\nIn-Memory Search Cache + Atomic FS Ops"]
-        Icons["Icon Resolver (webaloo/icons.py)\nhttpx + BeautifulSoup4 + Monogram Fallback"]
-        Watcher["FileWatcherBroadcaster (webaloo/watcher.py)\nwatchfiles.awatch + Snapshot Fallback"]
+        Storage["Storage Engine (webaloo/storage.py)"]
+        Icons["Icon Resolver (webaloo/icons.py)"]
+        Watcher["FileWatcherBroadcaster (webaloo/watcher.py)"]
     end
 
     subgraph Disk["Local Filesystem (./webmixes)"]
-        IconsDir["_icons/\n(*.png, *.svg, *.ico, *.webp)"]
-        MixDirs["{mix_slug}/\n(_mix.json, {tile_slug}.json)"]
+        IconsDir["_icons/ (*.png, *.svg, *.ico, *.webp)"]
+        MixDirs["{mix_slug}/ (_mix.json, {tile_slug}.json)"]
     end
 
     DOM --> Partial
@@ -96,7 +96,7 @@ flowchart TB
 ### 3.1 Physical Directory Taxonomy
 
 ```text
-<ROOT_DIR>/                          # Resolved via: --dir > $WEBALOO_DIR > ./webmixes
+<ROOT_DIR>/                          # Resolved via: --dir > WEBALOO_DIR > ./webmixes
 ├── _icons/                          # Ignored by webmix scanner (starts with '_')
 │   ├── tradingview.png              # Auto-fetched site icon
 │   └── my-custom-icon.svg           # Sanitized user upload
@@ -120,8 +120,8 @@ flowchart TB
 | :--- | :--- | :--- | :--- |
 | `title` | `string` | Non-empty string; defaults to title-cased directory slug if omitted. | `mix_dir.name.title()` |
 | `order` | `integer` | Primary sort key in tab bar (`(order, slug)`). Re-indexed `0..N-1` on reorder. | `0` (or `max + 1`) |
-| `grid_cols` | `integer` | Clamped to $1 \le \text{grid\_cols} \le 30$ (UI modal enforces $2..24$). | `12` |
-| `grid_rows` | `integer` | Clamped to $1 \le \text{grid\_rows} \le 30$ (UI modal enforces $2..20$). | `8` |
+| `grid_cols` | `integer` | Clamped to `1 ≤ grid_cols ≤ 30` (UI modal enforces `2..24`). | `12` |
+| `grid_rows` | `integer` | Clamped to `1 ≤ grid_rows ≤ 30` (UI modal enforces `2..20`). | `8` |
 | `theme` | `string` | Enum: `{"dark", "light"}`. Any invalid value normalizes to `"dark"`. | `"dark"` |
 | `background` | `string` | Any valid CSS `background` property (`#hex`, `linear-gradient(...)`, `radial-gradient(...)`). | `"#0f172a"` |
 | `created_at` | `string` | ISO-8601 UTC timestamp (`YYYY-MM-DDTHH:MM:SSZ`). Preserved across updates. | Current UTC time |
@@ -133,9 +133,9 @@ flowchart TB
 | `id` | `string` | Always synchronized with filename stem (`{tile_id}`). | Derived from stem |
 | `name` | `string` | Display label and primary search token. | `"Bookmark"` (or stem) |
 | `url` | `string` | Supports `https://`, `http://`, LAN IPs (`192.168.x.x`), `localhost`, and custom URI schemes (`vscode://`, `obsidian://`). | `"https://example.com"` |
-| `x` | `integer` | Strict integer (`not isinstance(x, bool)`), $0 \le x < \text{grid\_cols}$. | Nearest free $x$ |
-| `y` | `integer` | Strict integer (`not isinstance(y, bool)`), $0 \le y < \text{grid\_rows}$. | Nearest free $y$ |
-| `w`, `h` | `integer` | Cell span dimensions ($w \ge 1, h \ge 1$). | `1`, `1` |
+| `x` | `integer` | Strict integer (`not isinstance(x, bool)`), `0 ≤ x < grid_cols`. | Nearest free `x` |
+| `y` | `integer` | Strict integer (`not isinstance(y, bool)`), `0 ≤ y < grid_rows`. | Nearest free `y` |
+| `w`, `h` | `integer` | Cell span dimensions (`w ≥ 1`, `h ≥ 1`). | `1`, `1` |
 | `bg_color` | `string` | CSS hex/color string for tile surface. | `"#1e293b"` |
 | `text_color` | `string` | CSS hex/color string for label and monogram/icon. | `"#ffffff"` |
 | `show_label` | `boolean` | Controls whether text label renders below icon. | `true` |
@@ -159,17 +159,19 @@ flowchart TB
    - If the resulting string is empty or begins with `.` or `_`, the `fallback` prefix (`"tile"` or `"mix"`) is prepended so the file/directory is never treated as hidden/system by `INV-01`.
 2. **Collision Suffixing ([`Storage._unique_tile_id`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L363-L370) & [`Storage.create_mix`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L218-L252)):**
    - If `{slug}.json` does not exist in `mix_dir`, return `{slug}`.
-   - Otherwise, iterate $k \in \{2, 3, 4, \dots\}$ until `{slug}-{k}.json` does not exist, guaranteeing $O(N)$ deterministic uniqueness without random UUID clutter.
+   - Otherwise, iterate `k ∈ {2, 3, 4, ...}` until `{slug}-{k}.json` does not exist, guaranteeing `O(N)` deterministic uniqueness without random UUID clutter.
 
 ### 4.2 Nearest-Slot Spatial Allocation (`_find_nearest_free_slot`)
 
 Used when creating a tile on an occupied coordinate, duplicating a tile (`REQ-TILE-008`), transferring a tile whose coordinate is taken in the target webmix (`REQ-TILE-010`), or relocating out-of-bounds tiles during a grid shrink (`REQ-MIX-007`).
 
-- **Input:** Occupied coordinate set $O \subseteq \mathbb{Z}^2$, bounds $(C, R)$, anchor $(x_0, y_0)$.
-- **Fast Path:** If $(x_0, y_0) \notin O$ and $0 \le x_0 < C \land 0 \le y_0 < R$, return $(x_0, y_0)$ in $O(1)$.
-- **Metric Search:** For every unoccupied cell $(x, y) \in [0, C) \times [0, R) \setminus O$, compute the sort tuple:
-  $$k(x, y) = \left(\sqrt{(x - x_0)^2 + (y - y_0)^2},\ y,\ x\right)$$
-- **Selection:** Return $(x, y)$ minimizing $k(x, y)$ (Euclidean proximity with deterministic row-major tie-breaking). If $[0, C) \times [0, R) \setminus O = \emptyset$, raise [`BoardFullError`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L42-L43).
+- **Input:** Occupied coordinate set `O ⊆ ℤ²`, grid dimensions `(C, R)`, anchor coordinate `(x0, y0)`.
+- **Fast Path:** If `(x0, y0) ∉ O` and `0 ≤ x0 < C ∧ 0 ≤ y0 < R`, return `(x0, y0)` in `O(1)`.
+- **Metric Search:** For every unoccupied cell `(x, y) ∈ [0, C) × [0, R) \ O`, compute the sort key tuple:
+  ```text
+  k(x, y) = ( hypot(x - x0, y - y0),  y,  x )
+  ```
+- **Selection:** Return `(x, y)` minimizing `k(x, y)` (Euclidean proximity with deterministic row-major tie-breaking). If no unoccupied cell exists (`|O| == C × R`), raise [`BoardFullError`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L42-L43).
 
 ### 4.3 Atomic Drag-to-Move & Drag-to-Swap (`Storage.move_tile`)
 
@@ -205,32 +207,34 @@ sequenceDiagram
 
 ### 4.4 Grid Dimension Shrinking & Out-of-Bounds Relocation (`Storage.update_mix`)
 
-When a user edits a webmix's `(grid_cols, grid_rows)` to $(C_{\text{new}}, R_{\text{new}})$:
+When a user edits a webmix's `(grid_cols, grid_rows)` to `(C_new, R_new)`:
 1. Compute the out-of-bounds partition:
-   $$T_{\text{oob}} = \{t \in M.\text{tiles} \mid t.x \ge C_{\text{new}} \lor t.y \ge R_{\text{new}}\}$$
-2. If $T_{\text{oob}} \neq \emptyset$ and `relocate_out_of_bounds == False`:
+   ```text
+   T_oob = { t ∈ M.tiles | t.x ≥ C_new ∨ t.y ≥ R_new }
+   ```
+2. If `T_oob ≠ ∅` and `relocate_out_of_bounds == False`:
    - Abort before touching the filesystem and raise [`OutOfBoundsError(affected_tiles=T_oob)`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L46-L50), which returns `HTTP 409 Conflict` with `"code": "OUT_OF_BOUNDS_TILES"`.
    - Note that the UI also proactively evaluates this condition client-side on input change ([`Webaloo.checkMixBoundsWarning`](file:///C:/Dev/github/philippeback/webaloo/webaloo/static/app.js#L455-L473)) to display the warning banner and relocation checkbox immediately.
-3. If $T_{\text{oob}} \neq \emptyset$ and `relocate_out_of_bounds == True`:
-   - Verify total capacity: if $|M.\text{tiles}| > C_{\text{new}} \times R_{\text{new}}$, raise [`BoardFullError`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L42-L43) (`HTTP 400`).
-   - Initialize occupied set $O_{\text{in}} = \{(t.x, t.y) \mid t \in M.\text{tiles} \setminus T_{\text{oob}}\}$.
-   - For each $t \in T_{\text{oob}}$, clamp its anchor to $(\min(t.x, C_{\text{new}}-1), \min(t.y, R_{\text{new}}-1))$, allocate the nearest free slot $(x', y') \notin O_{\text{in}}$ via `_find_nearest_free_slot`, add $(x', y')$ to $O_{\text{in}}$, and persist `{t.id}.json`.
+3. If `T_oob ≠ ∅` and `relocate_out_of_bounds == True`:
+   - Verify total capacity: if `len(M.tiles) > C_new × R_new`, raise [`BoardFullError`](file:///C:/Dev/github/philippeback/webaloo/webaloo/storage.py#L42-L43) (`HTTP 400`).
+   - Initialize occupied set `O_in = { (t.x, t.y) | t ∈ M.tiles \ T_oob }`.
+   - For each `t ∈ T_oob`, clamp its anchor to `(min(t.x, C_new - 1), min(t.y, R_new - 1))`, allocate the nearest free slot `(x', y') ∉ O_in` via `_find_nearest_free_slot`, add `(x', y')` to `O_in`, and persist `{t.id}.json`.
    - Persist updated `_mix.json`.
 
 ### 4.5 Favicon & Metadata Discovery Pipeline (`fetch_site_icon_and_metadata`)
 
 ```mermaid
 flowchart LR
-    Start["Input URL"] --> Validate{"Scheme in\n{http, https}?"}
-    Validate -- No --> Fallback["Return Monogram Fallback\n(fallback: true)"]
-    Validate -- Yes --> FetchHTML["GET Page HTML\n(timeout=5.0s)"]
-    FetchHTML --> ParseHTML["Parse <title>, og:title,\n<link rel='apple-touch-icon'>,\n<link rel='icon'>"]
-    ParseHTML --> Score["Score Candidates:\napple-touch-icon: 300 + size\nrel=icon: 100 + size\n+ /apple-touch-icon.png\n+ /favicon.ico"]
-    Score --> Loop["Iterate Candidates\nby Descending Score"]
-    Loop --> Download{"HTTP 200 &\nlen >= 32B &\nnot HTML?"}
-    Download -- Yes --> Save["Guess Ext (MIME / Magic Bytes)\nWrite ./webmixes/_icons/{domain}.{ext}"]
-    Save --> ReturnCached["Return icon_type='cached'\nicon_url='/icons/{domain}.{ext}'"]
-    Download -- No --> NextCand{"More\nCandidates?"}
+    Start["Input URL"] --> Validate{"Scheme in http / https?"}
+    Validate -- No --> Fallback["Return Monogram Fallback (fallback: true)"]
+    Validate -- Yes --> FetchHTML["GET Page HTML (timeout=5.0s)"]
+    FetchHTML --> ParseHTML["Parse title, og:title, apple-touch-icon, rel=icon"]
+    ParseHTML --> Score["Score Candidates (apple-touch-icon: 300+size, rel=icon: 100+size, /favicon.ico)"]
+    Score --> Loop["Iterate Candidates by Descending Score"]
+    Loop --> Download{"HTTP 200 & len >= 32B & not HTML?"}
+    Download -- Yes --> Save["Guess Ext & Write ./webmixes/_icons/{domain}.{ext}"]
+    Save --> ReturnCached["Return icon_type='cached', icon_url='/icons/{domain}.{ext}'"]
+    Download -- No --> NextCand{"More Candidates?"}
     NextCand -- Yes --> Loop
     NextCand -- No --> Fallback
 ```
@@ -245,15 +249,15 @@ stateDiagram-v2
         [*] --> Synced
     }
 
-    IdleViewing --> Refreshing: SSE "reload" event received\n(No modal open)
+    IdleViewing --> Refreshing: SSE reload event (no modal open)
     Refreshing --> IdleViewing: HTMX GET /mix/{slug} swapped
 
     IdleViewing --> ModalOpen_Clean: User opens Tile / Mix / Search Modal
     ModalOpen_Clean --> IdleViewing: User closes or submits Modal
 
-    ModalOpen_Clean --> ModalOpen_DirtySync: SSE "reload" event received\n(deferredReload = true, show #sync-pending-badge)
-    ModalOpen_DirtySync --> ModalOpen_DirtySync: Additional SSE "reload" events\n(coalesced)
-    ModalOpen_DirtySync --> Refreshing: User closes Modal or clicks #sync-pending-badge\n(flushDeferredReload())
+    ModalOpen_Clean --> ModalOpen_DirtySync: SSE reload event (deferredReload = true, show #sync-pending-badge)
+    ModalOpen_DirtySync --> ModalOpen_DirtySync: Additional SSE reload events (coalesced)
+    ModalOpen_DirtySync --> Refreshing: User closes Modal or clicks #sync-pending-badge
 ```
 
 ---
@@ -284,7 +288,7 @@ stateDiagram-v2
 
 ---
 
-## 6. Requirements Traceability Matrix (EARS $\rightarrow$ Implementation $\rightarrow$ Verification)
+## 6. Requirements Traceability Matrix (EARS → Implementation → Verification)
 
 | EARS Requirement ID | Requirement Summary | Implementation Locus | Verification Test |
 | :--- | :--- | :--- | :--- |

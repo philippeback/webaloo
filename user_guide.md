@@ -3,7 +3,7 @@
 | Metadata Field | Value |
 | :--- | :--- |
 | **Document ID** | `WEBALOO-UG-001` |
-| **Version** | `1.0.0` |
+| **Version** | `1.0.1` |
 | **Target Audience** | Power Users, Developers, System Administrators |
 | **Companion Docs** | [README.md](file:///C:/Dev/github/philippeback/webaloo/README.md), [WebalooSpec.md](file:///C:/Dev/github/philippeback/webaloo/WebalooSpec.md), [WebalooEARS-Spec.md](file:///C:/Dev/github/philippeback/webaloo/WebalooEARS-Spec.md), [sdi.md](file:///C:/Dev/github/philippeback/webaloo/sdi.md) |
 
@@ -17,33 +17,33 @@ Webaloo eliminates opaque browser bookmark databases and cloud lock-in by enforc
 flowchart LR
     subgraph Disk["Local Filesystem (./webmixes)"]
         Root["./webmixes/"]
-        Icons["_icons/\ntradingview.png"]
+        Icons["_icons/ (tradingview.png)"]
         MixFolder["trading/"]
-        MixMeta["_mix.json\n(12×8, #090d16, order=1)"]
-        TileFile["es-futures.json\n(x=1, y=1, bg=#047857)"]
+        MixMeta["_mix.json (12x8, #090d16, order=1)"]
+        TileFile["es-futures.json (x=1, y=1, bg=#047857)"]
     end
 
     subgraph UI["Browser Viewport (http://127.0.0.1:8080)"]
-        TabBar["Top Tab Bar\nTab #2: 'Trading & Markets'"]
-        Board["12×8 Fixed Spatial Matrix"]
-        Slot["Cell (Col 1, Row 1)\n'ES Futures' Tile"]
+        TabBar["Top Tab Bar (Tab 2: Trading & Markets)"]
+        Board["12x8 Fixed Spatial Matrix"]
+        Slot["Cell (Col 1, Row 1): ES Futures Tile"]
     end
 
     Root --> Icons & MixFolder
     MixFolder --> MixMeta & TileFile
-    MixMeta <==>|Bi-directional Sync| TabBar & Board
-    TileFile <==>|Bi-directional Sync| Slot
+    MixMeta <-->|Bi-directional Sync| TabBar & Board
+    TileFile <-->|Bi-directional Sync| Slot
 ```
 
 ### 1.1 Core Entity Mapping
 
 | UI Concept | Filesystem Representation | Identity Rule | Persistence Behavior |
 | :--- | :--- | :--- | :--- |
-| **Data Root** | `./webmixes/` (or `--dir` / `$WEBALOO_DIR`) | Absolute path on disk | Created automatically on first startup if absent. |
+| **Data Root** | `./webmixes/` (or `--dir` / `WEBALOO_DIR`) | Absolute path on disk | Created automatically on first startup if absent. |
 | **Icon Cache** | `./webmixes/_icons/*` | Sanitized filename (`{slug}.{ext}`) | Shared across all webmixes; preserved even when a webmix is deleted. |
 | **Webmix (Board)** | `./webmixes/{mix_slug}/` | Directory name (not starting with `.` or `_`) | Configured by `{mix_slug}/_mix.json`. Auto-healed if `_mix.json` is deleted. |
 | **Tile (Bookmark)** | `./webmixes/{mix_slug}/{tile_id}.json` | Filename stem (`{tile_id}`) | Formatted with 2-space UTF-8 indentation for clean Git diffs. |
-| **Empty Grid Slot** | Absence of tile with `(x, y)` in `{mix_slug}/` | Coordinate pair $(x, y)$ | Preserved indefinitely (`float: true`); tiles never auto-compact. |
+| **Empty Grid Slot** | Absence of tile with `(x, y)` in `{mix_slug}/` | Coordinate pair `(x, y)` | Preserved indefinitely (`float: true`); tiles never auto-compact. |
 
 ---
 
@@ -66,13 +66,15 @@ uv sync
 | **Installed Entrypoint** | `uv run webaloo` | Root: `./webmixes`, Bind: `127.0.0.1:8080` |
 | **Custom Data Directory** | `uv run webaloo --dir D:/bookmarks/webmixes` | Root: `D:\bookmarks\webmixes`, Bind: `127.0.0.1:8080` |
 | **Custom Port & LAN Bind** | `uv run webaloo --host 0.0.0.0 --port 8765` | Accessible across local LAN at `http://<LAN_IP>:8765` |
-| **Environment Variable Driven** | `$env:WEBALOO_DIR="D:/mixes"; $env:WEBALOO_PORT="9000"; uv run webaloo` | Root: `D:\mixes`, Bind: `127.0.0.1:9000` |
+| **Environment Variable Driven** | `WEBALOO_DIR="D:/mixes" WEBALOO_PORT="9000" uv run webaloo` | Root: `D:\mixes`, Bind: `127.0.0.1:9000` |
 
 ### 2.3 Configuration Precedence Hierarchy
 
 Webaloo resolves configuration deterministically in [`resolve_config`](file:///C:/Dev/github/philippeback/webaloo/webaloo/__main__.py#L36-L42) using strict three-tier precedence:
 
-$$\text{CLI Flag } (\texttt{--dir}, \texttt{--host}, \texttt{--port}) \succ \text{Environment Variable } (\texttt{WEBALOO\_*}) \succ \text{Built-in Default}$$
+```text
+Tier 1: CLI Flag (--dir, --host, --port)  ≻  Tier 2: Environment Variable (WEBALOO_*)  ≻  Tier 3: Built-in Default
+```
 
 | Parameter | Tier 1: CLI Flag | Tier 2: Environment Variable | Tier 3: Built-in Default |
 | :--- | :--- | :--- | :--- |
@@ -148,7 +150,7 @@ Right-click any occupied tile (or click its hover `•••` button) to execute
    - Specify **Webmix Title**, optional **Folder Slug**, **Columns (Width)**, **Rows (Height)**, **Theme**, and **Backdrop CSS / Color** (solid hex or CSS `linear-gradient` / `radial-gradient` presets).
 2. **Edit Webmix & Out-of-Bounds Protection:**
    - Click the sliders icon (`⚙️`) on the active tab or top-right header.
-   - If you reduce **Columns** or **Rows** such that existing tiles have coordinates $x \ge \text{new\_cols}$ or $y \ge \text{new\_rows}$, an amber warning banner immediately lists the affected tiles:
+   - If you reduce **Columns** or **Rows** such that existing tiles have coordinates `x ≥ new_cols` or `y ≥ new_rows`, an amber warning banner immediately lists the affected tiles:
      > *"N tile(s) lie outside Cols×Rows: TileName (x,y)"*
    - Check **"Automatically relocate out-of-bounds tiles to nearest free slots"** before clicking **Save Webmix** to have Webaloo non-destructively pack those tiles into the nearest open cells inside the new boundary.
 

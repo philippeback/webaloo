@@ -41,7 +41,7 @@ This document formalizes the requirements from [WebalooSpec.md](file:///C:/Dev/g
   The **Webaloo Backend** shall treat every `.json` file inside a webmix directory whose filename does not start with `_` as an individual tile.
 
 - **REQ-FS-008** `[Ubiquitous]`
-  The **Webaloo Backend** shall derive each tile's unique identifier (`id`) within its webmix directly from the `.json` filename stem (e.g., `tradingview.json` $\rightarrow$ `id = "tradingview"`).
+  The **Webaloo Backend** shall derive each tile's unique identifier (`id`) within its webmix directly from the `.json` filename stem (e.g., `tradingview.json` → `id = "tradingview"`).
 
 - **REQ-FS-009** `[Ubiquitous]`
   The **Webaloo Backend** shall serialize all `_mix.json` and tile `.json` files using UTF-8 encoding and 2-space indentation so that files remain human-readable and Git-diffable.
@@ -116,7 +116,7 @@ This document formalizes the requirements from [WebalooSpec.md](file:///C:/Dev/g
   When a user left-clicks an unoccupied grid cell at `(x, y)`, the **Webaloo UI** shall open the Create Tile modal pre-populated with coordinates `(x, y)`.
 
 - **REQ-TILE-004** `[Event-Driven]`
-  When a user submits the Create Tile modal, the **Webaloo Backend** shall generate a human-readable slugified filename from the tile's `name` (e.g., `TradingView` $\rightarrow$ `tradingview.json`) and write the tile JSON payload to the active webmix directory.
+  When a user submits the Create Tile modal, the **Webaloo Backend** shall generate a human-readable slugified filename from the tile's `name` (e.g., `TradingView` → `tradingview.json`) and write the tile JSON payload to the active webmix directory.
 
 - **REQ-TILE-005** `[Unwanted Behavior]`
   If creating a new tile results in a filename stem that already exists in the same webmix directory, then the **Webaloo Backend** shall append an incrementing numeric suffix (`{slug}-2.json`, `{slug}-3.json`, etc.) to guarantee uniqueness.

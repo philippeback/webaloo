@@ -63,8 +63,8 @@ Located in each webmix folder (`./webmixes/{mix_slug}/_mix.json`):
 ### 2.2 Tile JSON Schema (`{tile_slug}.json`)
 
 Located inside a webmix folder (`./webmixes/{mix_slug}/{tile_slug}.json`).
-- **Tile ID:** Derived directly from the filename stem (`tradingview.json` $\rightarrow$ `id = "tradingview"`). If an explicit `"id"` field is present in the JSON, it is kept synchronized with the filename stem.
-- **Filename Generation:** When creating a tile from the UI, the tile's `name` is slugified (`"TradingView"` $\rightarrow$ `tradingview.json`). If a collision occurs in the same folder, a numeric suffix is appended (`tradingview-2.json`).
+- **Tile ID:** Derived directly from the filename stem (`tradingview.json` → `id = "tradingview"`). If an explicit `"id"` field is present in the JSON, it is kept synchronized with the filename stem.
+- **Filename Generation:** When creating a tile from the UI, the tile's `name` is slugified (`"TradingView"` → `tradingview.json`). If a collision occurs in the same folder, a numeric suffix is appended (`tradingview-2.json`).
 
 ```json
 {

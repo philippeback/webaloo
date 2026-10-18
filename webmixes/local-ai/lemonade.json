@@ -1,0 +1,18 @@
+{
+  "id": "lemonade",
+  "name": "Lemonade",
+  "url": "https://127.0.0.1:13305",
+  "x": 0,
+  "y": 0,
+  "w": 1,
+  "h": 1,
+  "bg_color": "#d97706",
+  "text_color": "#ffffff",
+  "show_label": true,
+  "icon_type": "lucide",
+  "icon": "lucide:server",
+  "icon_url": null,
+  "monogram": "12",
+  "tags": [],
+  "target": "_blank"
+}

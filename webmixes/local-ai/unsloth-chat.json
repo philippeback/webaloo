@@ -1,0 +1,18 @@
+{
+  "id": "unsloth-chat",
+  "name": "Unsloth Chat",
+  "url": "http://127.0.0.1:8888/chat",
+  "x": 1,
+  "y": 0,
+  "w": 1,
+  "h": 1,
+  "bg_color": "#1e293b",
+  "text_color": "#ffffff",
+  "show_label": true,
+  "icon_type": "cached",
+  "icon": null,
+  "icon_url": "/icons/127.png",
+  "monogram": "UN",
+  "tags": [],
+  "target": "_blank"
+}
