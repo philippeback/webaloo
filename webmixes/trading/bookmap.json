@@ -1,0 +1,22 @@
+{
+  "id": "bookmap",
+  "name": "Bookmap",
+  "url": "https://bookmap.com",
+  "x": 2,
+  "y": 1,
+  "w": 1,
+  "h": 1,
+  "bg_color": "#1e1b4b",
+  "text_color": "#ffffff",
+  "show_label": true,
+  "icon_type": "lucide",
+  "icon": "lucide:layers",
+  "icon_url": null,
+  "monogram": "BM",
+  "tags": [
+    "orderflow",
+    "liquidity",
+    "trading"
+  ],
+  "target": "_blank"
+}

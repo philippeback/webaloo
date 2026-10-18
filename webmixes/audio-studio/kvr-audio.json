@@ -1,0 +1,22 @@
+{
+  "id": "kvr-audio",
+  "name": "KVR Audio",
+  "url": "https://www.kvraudio.com",
+  "x": 0,
+  "y": 0,
+  "w": 1,
+  "h": 1,
+  "bg_color": "#6d28d9",
+  "text_color": "#ffffff",
+  "show_label": true,
+  "icon_type": "lucide",
+  "icon": "lucide:headphones",
+  "icon_url": null,
+  "monogram": "KVR",
+  "tags": [
+    "vst",
+    "audio",
+    "plugins"
+  ],
+  "target": "_blank"
+}

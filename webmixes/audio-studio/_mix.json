@@ -1,0 +1,9 @@
+{
+  "title": "Audio Studio",
+  "order": 2,
+  "grid_cols": 12,
+  "grid_rows": 8,
+  "theme": "dark",
+  "background": "#111827",
+  "created_at": "2026-10-18T20:50:00Z"
+}

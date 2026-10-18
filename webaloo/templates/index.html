@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en" class="dark h-full">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>{{ active_mix.title }} — Webaloo</title>
+  <!-- Tailwind CSS CDN -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <!-- HTMX -->
+  <script src="https://unpkg.com/htmx.org@1.9.12"></script>
+  <!-- Lucide Icons -->
+  <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="stylesheet" href="/static/styles.css" />
+</head>
+<body class="h-full w-full overflow-hidden bg-slate-950 text-slate-100 antialiased">
+
+  <!-- Main Workspace Root (HTMX Swap Target) -->
+  <div id="workspace-root" class="h-full w-full">
+    {% include "partials/workspace.html" %}
+  </div>
+
+  <!-- Right-Click / Action Context Menu for Tiles (REQ-TILE-006) -->
+  <div id="tile-context-menu"
+       class="hidden fixed z-50 w-52 rounded-xl bg-slate-900/95 backdrop-blur-md border border-slate-700/80 shadow-2xl py-1.5 text-sm text-slate-200">
+    <button type="button" onclick="Webaloo.ctxEditTile()"
+            class="w-full px-3.5 py-2 text-left flex items-center gap-2.5 hover:bg-indigo-600/30 hover:text-white transition">
+      <i data-lucide="pencil" class="w-4 h-4 text-indigo-400"></i>
+      <span>Edit Tile</span>
+    </button>
+    <button type="button" onclick="Webaloo.ctxDuplicateTile()"
+            class="w-full px-3.5 py-2 text-left flex items-center gap-2.5 hover:bg-indigo-600/30 hover:text-white transition">
+      <i data-lucide="copy" class="w-4 h-4 text-cyan-400"></i>
+      <span>Duplicate Tile</span>
+    </button>
+    <div class="relative group/move">
+      <button type="button"
+              class="w-full px-3.5 py-2 text-left flex items-center justify-between hover:bg-indigo-600/30 hover:text-white transition">
+        <span class="flex items-center gap-2.5">
+          <i data-lucide="folder-input" class="w-4 h-4 text-emerald-400"></i>
+          <span>Move to Webmix</span>
+        </span>
+        <i data-lucide="chevron-right" class="w-3.5 h-3.5 text-slate-400"></i>
+      </button>
+      <div id="ctx-move-submenu"
+           class="hidden group-hover/move:block absolute left-full top-0 ml-1 w-48 rounded-xl bg-slate-900/95 backdrop-blur-md border border-slate-700/80 shadow-2xl py-1.5">
+        <!-- Populated dynamically from all-mixes-data -->
+      </div>
+    </div>
+    <div class="my-1 border-t border-slate-800"></div>
+    <button type="button" onclick="Webaloo.ctxDeleteTile()"
+            class="w-full px-3.5 py-2 text-left flex items-center gap-2.5 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 transition">
+      <i data-lucide="trash-2" class="w-4 h-4"></i>
+      <span>Delete Tile</span>
+    </button>
+  </div>
+
+  <!-- Create / Edit Tile Modal (REQ-TILE-003, REQ-TILE-004, REQ-TILE-007, REQ-ICON-002..006) -->
+  <div id="tile-modal"
+       class="modal-backdrop hidden fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[92vh]">
+      <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-800">
+        <h2 id="tile-modal-title" class="text-base font-semibold text-white">Create Tile</h2>
+        <button type="button" onclick="Webaloo.closeTileModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="tile-form" onsubmit="Webaloo.submitTileForm(event)" class="p-5 overflow-y-auto space-y-4 text-sm">
+        <input type="hidden" id="tile-form-mode" value="create" />
+        <input type="hidden" id="tile-form-id" value="" />
+
+        <div class="flex gap-5 items-start">
+          <!-- Live Tile Preview (REQ-ICON-006) -->
+          <div class="shrink-0 flex flex-col items-center gap-1.5">
+            <span class="text-[11px] uppercase tracking-wider text-slate-400 font-semibold">Live Preview</span>
+            <div id="tile-live-preview"
+                 class="w-24 h-24 rounded-xl flex flex-col items-center justify-center p-2 shadow-lg border border-white/15 transition-all"
+                 style="background-color: #1e293b; color: #ffffff;">
+              <div id="tile-preview-icon" class="flex-1 flex items-center justify-center">
+                <span class="font-bold text-xl uppercase">WB</span>
+              </div>
+              <span id="tile-preview-label" class="w-full text-xs font-medium truncate text-center">Bookmark</span>
+            </div>
+            <span id="tile-coords-badge" class="text-[11px] font-mono text-slate-400">Slot (0, 0)</span>
+          </div>
+
+          <!-- URL & Name Inputs -->
+          <div class="flex-1 space-y-3">
+            <div>
+              <label class="block text-xs font-medium text-slate-300 mb-1">Destination URL *</label>
+              <div class="flex gap-1.5">
+                <input type="text" id="tile-url" required
+                       placeholder="https://tradingview.com or http://192.168.1.50:8888"
+                       oninput="Webaloo.onTileUrlInput(this.value)"
+                       class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+                <button type="button"
+                        id="btn-fetch-icon"
+                        onclick="Webaloo.fetchSiteMetadata()"
+                        class="px-3 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-200 text-xs font-medium shrink-0 flex items-center gap-1"
+                        title="Auto-discover title & site icon">
+                  <i data-lucide="sparkles" class="w-3.5 h-3.5 text-indigo-400"></i>
+                  <span>Fetch</span>
+                </button>
+              </div>
+              <p id="icon-fetch-status" class="text-[11px] text-slate-400 mt-1 hidden"></p>
+            </div>
+
+            <div class="grid grid-cols-3 gap-2.5">
+              <div class="col-span-2">
+                <label class="block text-xs font-medium text-slate-300 mb-1">Tile Name *</label>
+                <input type="text" id="tile-name" required
+                       placeholder="TradingView"
+                       oninput="Webaloo.updateTilePreview()"
+                       class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Open In</label>
+                <select id="tile-target"
+                        class="w-full px-2.5 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-indigo-500">
+                  <option value="_blank">New Tab</option>
+                  <option value="_self">Same Tab</option>
+                </select>
+              </div>
+            </div>
+
+            <div class="grid grid-cols-2 gap-2.5">
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Grid Column (X)</label>
+                <input type="number" id="tile-x" min="0" required
+                       oninput="Webaloo.updateTilePreview()"
+                       class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white" />
+              </div>
+              <div>
+                <label class="block text-xs font-medium text-slate-300 mb-1">Grid Row (Y)</label>
+                <input type="number" id="tile-y" min="0" required
+                       oninput="Webaloo.updateTilePreview()"
+                       class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white" />
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 4 Appearance / Icon Mode Tabs (REQ-ICON-004) -->
+        <div class="border border-slate-800 rounded-xl p-3 bg-slate-950/50 space-y-3">
+          <div class="flex items-center justify-between">
+            <span class="text-xs font-semibold text-slate-300">Icon Mode</span>
+            <div class="inline-flex rounded-lg bg-slate-800 p-0.5 text-xs">
+              <button type="button" data-icon-tab="cached" onclick="Webaloo.setIconMode('cached')"
+                      class="icon-mode-btn px-2.5 py-1 rounded-md font-medium transition">Site / Upload</button>
+              <button type="button" data-icon-tab="lucide" onclick="Webaloo.setIconMode('lucide')"
+                      class="icon-mode-btn px-2.5 py-1 rounded-md font-medium transition">Lucide Icon</button>
+              <button type="button" data-icon-tab="external" onclick="Webaloo.setIconMode('external')"
+                      class="icon-mode-btn px-2.5 py-1 rounded-md font-medium transition">Image URL</button>
+              <button type="button" data-icon-tab="monogram" onclick="Webaloo.setIconMode('monogram')"
+                      class="icon-mode-btn px-2.5 py-1 rounded-md font-medium transition">Monogram</button>
+            </div>
+          </div>
+          <input type="hidden" id="tile-icon-type" value="monogram" />
+
+          <!-- Tab 1: Cached / Upload Icon -->
+          <div id="icon-panel-cached" class="icon-mode-panel hidden space-y-2">
+            <div class="flex items-center gap-2">
+              <input type="text" id="tile-cached-url" readonly
+                     placeholder="/icons/example.png (auto-fetched or uploaded)"
+                     class="flex-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-slate-300 text-xs" />
+              <label class="px-3 py-1.5 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-medium cursor-pointer transition shrink-0">
+                <span>Upload Image</span>
+                <input type="file" id="tile-icon-file" accept=".png,.svg,.ico,.webp,.jpg,.jpeg"
+                       onchange="Webaloo.uploadCustomIcon(this)" class="hidden" />
+              </label>
+            </div>
+          </div>
+
+          <!-- Tab 2: Lucide Vector Icon Picker -->
+          <div id="icon-panel-lucide" class="icon-mode-panel hidden space-y-2">
+            <div class="flex items-center gap-2">
+              <input type="text" id="tile-lucide-search"
+                     placeholder="Filter icons (e.g. chart, terminal, music, github)..."
+                     oninput="Webaloo.filterLucideIcons(this.value)"
+                     class="flex-1 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs" />
+              <input type="text" id="tile-lucide-name"
+                     placeholder="globe"
+                     oninput="Webaloo.updateTilePreview()"
+                     class="w-36 px-2.5 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-indigo-300 font-mono text-xs" />
+            </div>
+            <div id="lucide-picker-grid" class="grid grid-cols-10 gap-1.5 max-h-28 overflow-y-auto p-1 bg-slate-900/70 rounded-lg border border-slate-800">
+              {% for icon_name in lucide_icons %}
+              <button type="button"
+                      data-lucide-option="{{ icon_name }}"
+                      onclick="Webaloo.selectLucideIcon('{{ icon_name }}')"
+                      class="lucide-option p-1.5 rounded hover:bg-indigo-600/40 flex items-center justify-center text-slate-300 hover:text-white transition"
+                      title="{{ icon_name }}">
+                <i data-lucide="{{ icon_name }}" class="w-4 h-4 pointer-events-none"></i>
+              </button>
+              {% endfor %}
+            </div>
+          </div>
+
+          <!-- Tab 3: External Image URL -->
+          <div id="icon-panel-external" class="icon-mode-panel hidden">
+            <input type="text" id="tile-external-url"
+                   placeholder="https://example.com/logo.png"
+                   oninput="Webaloo.updateTilePreview()"
+                   class="w-full px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white text-xs" />
+          </div>
+
+          <!-- Tab 4: Monogram Badge -->
+          <div id="icon-panel-monogram" class="icon-mode-panel hidden">
+            <div class="flex items-center gap-3">
+              <label class="text-xs text-slate-400">Badge Text (1–4 chars):</label>
+              <input type="text" id="tile-monogram" maxlength="4"
+                     placeholder="TV"
+                     oninput="Webaloo.updateTilePreview()"
+                     class="w-28 px-3 py-1.5 rounded-lg bg-slate-900 border border-slate-700 text-white font-bold uppercase text-center text-xs" />
+            </div>
+          </div>
+        </div>
+
+        <!-- Colors, Show Label & Tags (REQ-ICON-006) -->
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Tile Background Color</label>
+            <div class="flex items-center gap-2">
+              <input type="color" id="tile-bg-picker" value="#1e293b"
+                     oninput="document.getElementById('tile-bg-color').value = this.value; Webaloo.updateTilePreview();"
+                     class="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+              <input type="text" id="tile-bg-color" value="#1e293b"
+                     oninput="Webaloo.updateTilePreview()"
+                     class="w-28 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white font-mono text-xs" />
+              <!-- Quick Swatches -->
+              <div class="flex items-center gap-1">
+                {% for swatch in ['#131722', '#1e293b', '#1d4ed8', '#047857', '#b91c1c', '#6d28d9', '#d97706'] %}
+                <button type="button"
+                        onclick="Webaloo.setTileBgColor('{{ swatch }}')"
+                        class="w-4 h-4 rounded-full border border-white/20"
+                        style="background-color: {{ swatch }};"
+                        title="{{ swatch }}"></button>
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Text Color & Label</label>
+            <div class="flex items-center justify-between gap-2">
+              <div class="flex items-center gap-2">
+                <input type="color" id="tile-text-picker" value="#ffffff"
+                       oninput="document.getElementById('tile-text-color').value = this.value; Webaloo.updateTilePreview();"
+                       class="w-8 h-8 rounded cursor-pointer bg-transparent border-0" />
+                <input type="text" id="tile-text-color" value="#ffffff"
+                       oninput="Webaloo.updateTilePreview()"
+                       class="w-24 px-2.5 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white font-mono text-xs" />
+              </div>
+              <label class="flex items-center gap-1.5 text-xs text-slate-300 cursor-pointer">
+                <input type="checkbox" id="tile-show-label" checked
+                       onchange="Webaloo.updateTilePreview()"
+                       class="rounded bg-slate-800 border-slate-700 text-indigo-600" />
+                <span>Show label</span>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Tags (comma-separated for instant search)</label>
+          <input type="text" id="tile-tags"
+                 placeholder="trading, charts, crypto"
+                 class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-xs" />
+        </div>
+
+        <div class="flex items-center justify-end gap-2.5 pt-2 border-t border-slate-800">
+          <button type="button" onclick="Webaloo.closeTileModal()"
+                  class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium">
+            Cancel
+          </button>
+          <button type="submit"
+                  class="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold shadow-lg shadow-indigo-600/30">
+            Save Tile
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Create / Edit Webmix Modal (REQ-MIX-003, REQ-MIX-006, REQ-MIX-007, REQ-MIX-008) -->
+  <div id="mix-modal"
+       class="modal-backdrop hidden fixed inset-0 z-40 bg-black/70 backdrop-blur-sm flex items-center justify-center p-4">
+    <div class="bg-slate-900 border border-slate-700/80 rounded-2xl shadow-2xl w-full max-w-md overflow-hidden">
+      <div class="flex items-center justify-between px-5 py-3.5 border-b border-slate-800">
+        <h2 id="mix-modal-title" class="text-base font-semibold text-white">Create Webmix</h2>
+        <button type="button" onclick="Webaloo.closeMixModal()" class="text-slate-400 hover:text-white">
+          <i data-lucide="x" class="w-5 h-5"></i>
+        </button>
+      </div>
+
+      <form id="mix-form" onsubmit="Webaloo.submitMixForm(event)" class="p-5 space-y-4 text-sm">
+        <input type="hidden" id="mix-form-mode" value="create" />
+        <input type="hidden" id="mix-form-slug" value="" />
+
+        <div>
+          <label class="block text-xs font-medium text-slate-300 mb-1">Webmix Title *</label>
+          <input type="text" id="mix-title" required
+                 placeholder="Trading & Markets"
+                 class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white focus:outline-none focus:border-indigo-500" />
+        </div>
+
+        <div id="mix-slug-field">
+          <label class="block text-xs font-medium text-slate-300 mb-1">Folder Slug (optional)</label>
+          <input type="text" id="mix-custom-slug"
+                 placeholder="auto-generated from title"
+                 class="w-full px-3 py-1.5 rounded-lg bg-slate-800 border border-slate-700 text-slate-300 font-mono text-xs" />
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Columns (Width)</label>
+            <input type="number" id="mix-cols" min="2" max="24" value="12" required
+                   oninput="Webaloo.checkMixBoundsWarning()"
+                   class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white" />
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Rows (Height)</label>
+            <input type="number" id="mix-rows" min="2" max="20" value="8" required
+                   oninput="Webaloo.checkMixBoundsWarning()"
+                   class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white" />
+          </div>
+        </div>
+
+        <!-- Out-of-bounds warning banner (REQ-MIX-007) -->
+        <div id="mix-bounds-warning"
+             class="hidden p-3 rounded-xl bg-amber-500/15 border border-amber-500/40 text-amber-200 text-xs space-y-2">
+          <div class="flex items-start gap-2">
+            <i data-lucide="alert-triangle" class="w-4 h-4 text-amber-400 shrink-0 mt-0.5"></i>
+            <span id="mix-bounds-warning-text">Some existing tiles lie outside the new grid bounds.</span>
+          </div>
+          <label class="flex items-center gap-2 cursor-pointer font-medium text-amber-100">
+            <input type="checkbox" id="mix-relocate-checkbox"
+                   class="rounded bg-slate-800 border-amber-400 text-amber-500" />
+            <span>Automatically relocate out-of-bounds tiles to nearest free slots</span>
+          </label>
+        </div>
+
+        <div class="grid grid-cols-2 gap-3">
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Theme</label>
+            <select id="mix-theme"
+                    class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white">
+              <option value="dark">Dark</option>
+              <option value="light">Light</option>
+            </select>
+          </div>
+          <div>
+            <label class="block text-xs font-medium text-slate-300 mb-1">Backdrop CSS / Color</label>
+            <input type="text" id="mix-background" value="#0f172a"
+                   placeholder="#0f172a or linear-gradient(...)"
+                   class="w-full px-3 py-2 rounded-lg bg-slate-800 border border-slate-700 text-white font-mono text-xs" />
+          </div>
+        </div>
+
+        <div class="flex items-center gap-1.5 pt-1">
+          <span class="text-xs text-slate-400 mr-1">Presets:</span>
+          {% for bg in ['#0f172a', '#090d16', '#111827', ' radial-gradient(circle at top, #1e1b4b, #090d16)', 'linear-gradient(135deg, #0f172a 0%, #1e293b 100%)', 'linear-gradient(135deg, #064e3b 0%, #0f172a 100%)'] %}
+          <button type="button"
+                  onclick="document.getElementById('mix-background').value = '{{ bg.strip() }}'"
+                  class="w-5 h-5 rounded-full border border-white/25"
+                  style="background: {{ bg.strip() }};"
+                  title="{{ bg.strip() }}"></button>
+          {% endfor %}
+        </div>
+
+        <div class="flex items-center justify-between pt-3 border-t border-slate-800">
+          <button type="button" id="btn-delete-mix"
+                  onclick="Webaloo.confirmDeleteActiveMix()"
+                  class="hidden px-3 py-2 rounded-lg bg-rose-500/15 hover:bg-rose-500/30 text-rose-400 text-xs font-medium flex items-center gap-1.5">
+            <i data-lucide="trash-2" class="w-3.5 h-3.5"></i>
+            <span>Delete Mix</span>
+          </button>
+          <div class="flex items-center gap-2 ml-auto">
+            <button type="button" onclick="Webaloo.closeMixModal()"
+                    class="px-4 py-2 rounded-lg bg-slate-800 hover:bg-slate-700 text-slate-300 text-xs font-medium">
+              Cancel
+            </button>
+            <button type="submit"
+                    class="px-5 py-2 rounded-lg bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-semibold">
+              Save Webmix
+            </button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Global Instant Search Command Palette (Ctrl+K or /) (REQ-SRCH-001, REQ-SRCH-002, REQ-SRCH-003) -->
+  <div id="search-modal"
+       class="modal-backdrop hidden fixed inset-0 z-50 bg-black/75 backdrop-blur-sm flex items-start justify-center pt-16 sm:pt-24 p-4">
+    <div class="bg-slate-900 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-xl overflow-hidden flex flex-col max-h-[75vh]">
+      <div class="flex items-center px-4 py-3 border-b border-slate-800 gap-3">
+        <i data-lucide="search" class="w-5 h-5 text-indigo-400 shrink-0"></i>
+        <input type="text" id="global-search-input"
+               placeholder="Search tiles by name, URL, #tags, or webmix..."
+               autocomplete="off"
+               oninput="Webaloo.onSearchInput(this.value)"
+               onkeydown="Webaloo.onSearchKeyDown(event)"
+               class="w-full bg-transparent text-white placeholder-slate-500 focus:outline-none text-sm" />
+        <button type="button" onclick="Webaloo.closeSearchModal()"
+                class="px-1.5 py-0.5 text-[10px] font-mono bg-slate-800 text-slate-400 rounded border border-slate-700">ESC</button>
+      </div>
+
+      <div id="search-results-list" class="overflow-y-auto divide-y divide-slate-800/60 max-h-96">
+        <!-- Populated dynamically via /api/search -->
+      </div>
+
+      <div class="px-4 py-2 bg-slate-950/80 border-t border-slate-800 flex items-center justify-between text-[11px] text-slate-400">
+        <div class="flex items-center gap-3">
+          <span><kbd class="px-1 py-0.5 bg-slate-800 rounded border border-slate-700">↑↓</kbd> Navigate</span>
+          <span><kbd class="px-1 py-0.5 bg-slate-800 rounded border border-slate-700">Enter</kbd> Open URL</span>
+          <span><kbd class="px-1 py-0.5 bg-slate-800 rounded border border-slate-700">Alt+Enter</kbd> Jump to Mix</span>
+        </div>
+        <span id="search-count-label">0 results</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Notification Container -->
+  <div id="toast-container" class="fixed bottom-4 right-4 z-50 flex flex-col gap-2 pointer-events-none"></div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

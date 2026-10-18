@@ -1,0 +1,22 @@
+{
+  "id": "es-futures",
+  "name": "ES Futures",
+  "url": "https://www.cmegroup.com/markets/equities/sp/e-mini-sandp500.html",
+  "x": 1,
+  "y": 1,
+  "w": 1,
+  "h": 1,
+  "bg_color": "#047857",
+  "text_color": "#ffffff",
+  "show_label": true,
+  "icon_type": "lucide",
+  "icon": "lucide:trending-up",
+  "icon_url": null,
+  "monogram": "ES",
+  "tags": [
+    "futures",
+    "cme",
+    "trading"
+  ],
+  "target": "_blank"
+}

@@ -1,0 +1,21 @@
+{
+  "id": "lemonade",
+  "name": "Lemonade",
+  "url": "https://www.lemonade.com",
+  "x": 5,
+  "y": 2,
+  "w": 1,
+  "h": 1,
+  "bg_color": "#e11d48",
+  "text_color": "#ffffff",
+  "show_label": true,
+  "icon_type": "lucide",
+  "icon": "lucide:heart",
+  "icon_url": null,
+  "monogram": "LM",
+  "tags": [
+    "insurance",
+    "finance"
+  ],
+  "target": "_blank"
+}

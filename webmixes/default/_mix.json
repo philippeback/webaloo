@@ -1,0 +1,9 @@
+{
+  "title": "Default",
+  "order": 0,
+  "grid_cols": 12,
+  "grid_rows": 8,
+  "theme": "dark",
+  "background": "#0f172a",
+  "created_at": "2026-10-18T20:50:00Z"
+}

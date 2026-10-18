@@ -1,0 +1,187 @@
+<!-- Top Navigation Bar & Active Grid Partial (swapped via HTMX) -->
+<div id="workspace-inner"
+     data-mix-slug="{{ active_mix.slug }}"
+     data-mix-title="{{ active_mix.title }}"
+     data-grid-cols="{{ active_mix.grid_cols }}"
+     data-grid-rows="{{ active_mix.grid_rows }}"
+     data-theme="{{ active_mix.theme }}"
+     data-background="{{ active_mix.background }}"
+     class="flex flex-col h-full w-full select-none"
+     style="background: {{ active_mix.background }};">
+
+  <!-- Top Header / Webmix Tab Bar -->
+  <header class="flex items-center justify-between px-4 py-2 bg-slate-900/85 backdrop-blur-md border-b border-slate-700/60 text-slate-100 z-20 shrink-0 gap-3">
+    <!-- Brand + Webmix Tabs -->
+    <div class="flex items-center gap-2 min-w-0 flex-1 overflow-x-auto no-scrollbar">
+      <a href="/" class="flex items-center gap-2 pr-3 border-r border-slate-700/70 shrink-0 group" title="Webaloo Home">
+        <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center shadow-md shadow-indigo-500/20">
+          <i data-lucide="layout-grid" class="w-4 h-4 text-white"></i>
+        </div>
+        <span class="font-bold tracking-tight text-base bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-300">Webaloo</span>
+      </a>
+
+      <!-- Draggable Webmix Tabs (REQ-MIX-001, REQ-MIX-002, REQ-MIX-005) -->
+      <nav id="webmix-tabs" class="flex items-center gap-1.5 overflow-x-auto py-0.5" aria-label="Webmixes">
+        {% for mix in mixes %}
+        {% set is_active = (mix.slug == active_mix.slug) %}
+        <div class="mix-tab-item group relative flex items-center rounded-lg text-sm font-medium transition-all cursor-pointer shrink-0
+                    {% if is_active %}
+                      bg-indigo-600 text-white shadow-sm shadow-indigo-500/30
+                    {% else %}
+                      bg-slate-800/70 text-slate-300 hover:bg-slate-700/70 hover:text-white
+                    {% endif %}"
+             draggable="true"
+             data-mix-slug="{{ mix.slug }}"
+             ondragstart="Webaloo.onTabDragStart(event, '{{ mix.slug }}')"
+             ondragover="Webaloo.onTabDragOver(event)"
+             ondrop="Webaloo.onTabDrop(event, '{{ mix.slug }}')"
+             ondragend="Webaloo.onTabDragEnd(event)">
+          <a href="/mix/{{ mix.slug }}"
+             hx-get="/mix/{{ mix.slug }}"
+             hx-target="#workspace-root"
+             hx-swap="innerHTML"
+             hx-push-url="/mix/{{ mix.slug }}"
+             class="px-3 py-1.5 flex items-center gap-1.5">
+            <span>{{ mix.title }}</span>
+          </a>
+          {% if is_active %}
+          <button type="button"
+                  onclick="Webaloo.openEditMixModal()"
+                  class="pr-2 pl-0.5 py-1 text-indigo-200 hover:text-white transition"
+                  title="Edit Webmix Settings">
+            <i data-lucide="settings-2" class="w-3.5 h-3.5"></i>
+          </button>
+          {% endif %}
+        </div>
+        {% endfor %}
+
+        <button type="button"
+                onclick="Webaloo.openCreateMixModal()"
+                class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800/50 hover:bg-slate-700/80 text-slate-300 hover:text-white border border-dashed border-slate-600/70 transition shrink-0"
+                title="Create New Webmix">
+          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+          <span>New Mix</span>
+        </button>
+      </nav>
+    </div>
+
+    <!-- Right Controls: Sync Indicator, Search Bar (Ctrl+K), Board Info -->
+    <div class="flex items-center gap-2.5 shrink-0">
+      <!-- Deferred Sync Indicator (REQ-SYNC-004) -->
+      <button id="sync-pending-badge"
+              type="button"
+              onclick="Webaloo.flushDeferredReload()"
+              class="hidden items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-amber-500/20 text-amber-300 border border-amber-500/40 animate-pulse"
+              title="External disk changes detected. Click to refresh now.">
+        <i data-lucide="refresh-cw" class="w-3.5 h-3.5"></i>
+        <span>Disk updated</span>
+      </button>
+
+      <!-- Global Search Trigger (REQ-SRCH-001) -->
+      <button type="button"
+              onclick="Webaloo.openSearchModal()"
+              class="flex items-center gap-3 px-3 py-1.5 rounded-lg bg-slate-800/90 hover:bg-slate-700/90 border border-slate-600/60 text-slate-300 text-xs transition shadow-inner">
+        <i data-lucide="search" class="w-3.5 h-3.5 text-slate-400"></i>
+        <span class="hidden sm:inline text-slate-400">Search tiles...</span>
+        <kbd class="px-1.5 py-0.5 text-[10px] font-mono bg-slate-900/90 text-slate-400 rounded border border-slate-700">Ctrl+K</kbd>
+      </button>
+
+      <!-- Current Webmix Settings Button -->
+      <button type="button"
+              onclick="Webaloo.openEditMixModal()"
+              class="p-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 text-slate-300 hover:text-white border border-slate-700/60 transition"
+              title="Configure '{{ active_mix.title }}' ({{ active_mix.grid_cols }}×{{ active_mix.grid_rows }})">
+        <i data-lucide="sliders-horizontal" class="w-4 h-4"></i>
+      </button>
+    </div>
+  </header>
+
+  <!-- Symbaloo-Style Fixed 2D Spatial Grid (REQ-GRID-001, REQ-GRID-002, REQ-GRID-003) -->
+  <main class="flex-1 p-3 sm:p-5 overflow-auto flex items-center justify-center">
+    <div id="symbaloo-grid"
+         class="grid gap-2 sm:gap-2.5 w-full h-full max-w-[1600px] max-h-[960px] mx-auto"
+         style="grid-template-columns: repeat({{ active_mix.grid_cols }}, minmax(64px, 1fr));
+                grid-template-rows: repeat({{ active_mix.grid_rows }}, minmax(64px, 1fr));">
+      {% for y in range(active_mix.grid_rows) %}
+        {% for x in range(active_mix.grid_cols) %}
+          {% set tile = grid[y][x] %}
+          {% if tile %}
+          <!-- Occupied Tile Slot -->
+          <div class="grid-slot occupied-slot relative group rounded-xl transition-transform duration-150"
+               data-x="{{ x }}"
+               data-y="{{ y }}"
+               data-tile-id="{{ tile.id }}"
+               draggable="true"
+               ondragstart="Webaloo.onTileDragStart(event, '{{ tile.id }}', {{ x }}, {{ y }})"
+               ondragover="Webaloo.onSlotDragOver(event, {{ x }}, {{ y }})"
+               ondragleave="Webaloo.onSlotDragLeave(event)"
+               ondrop="Webaloo.onSlotDrop(event, {{ x }}, {{ y }})"
+               ondragend="Webaloo.onTileDragEnd(event)"
+               oncontextmenu="Webaloo.onTileContextMenu(event, '{{ tile.id }}')">
+
+            <!-- Tile Anchor (REQ-TILE-001, REQ-TILE-002) -->
+            <a href="{{ tile.url }}"
+               target="{{ tile.target }}"
+               rel="noopener noreferrer"
+               onclick="return Webaloo.onTileClick(event, '{{ tile.id }}')"
+               class="tile-card w-full h-full rounded-xl flex flex-col items-center justify-center p-1.5 shadow-md hover:shadow-xl border border-white/10 hover:border-white/30 transition-all overflow-hidden relative
+                      {% if highlight_tile == tile.id %}ring-4 ring-amber-400 animate-bounce{% endif %}"
+               style="background-color: {{ tile.bg_color }}; color: {{ tile.text_color }};"
+               title="{{ tile.name }} — {{ tile.url }}">
+
+              <!-- Tile Visual Icon -->
+              <div class="flex-1 flex items-center justify-center min-h-0 w-full">
+                {% if tile.icon_type in ('cached', 'external') and tile.icon_url %}
+                  <img src="{{ tile.icon_url }}"
+                       alt="{{ tile.name }}"
+                       class="w-8 h-8 sm:w-10 sm:h-10 object-contain rounded drop-shadow-sm pointer-events-none"
+                       onerror="this.style.display='none'; this.nextElementSibling.classList.remove('hidden');" />
+                  <span class="hidden font-bold text-base sm:text-lg tracking-wider uppercase pointer-events-none">{{ tile.monogram }}</span>
+                {% elif tile.icon_type == 'lucide' and tile.icon %}
+                  <i data-lucide="{{ tile.icon }}" class="w-7 h-7 sm:w-9 sm:h-9 pointer-events-none"></i>
+                {% else %}
+                  <span class="font-bold text-base sm:text-xl tracking-wider uppercase pointer-events-none select-none">{{ tile.monogram }}</span>
+                {% endif %}
+              </div>
+
+              <!-- Tile Label -->
+              {% if tile.show_label %}
+              <span class="w-full text-[11px] sm:text-xs font-medium truncate text-center leading-tight px-1 pt-0.5 pointer-events-none">
+                {{ tile.name }}
+              </span>
+              {% endif %}
+            </a>
+
+            <!-- Hover Context Menu Trigger (REQ-TILE-006) -->
+            <button type="button"
+                    onclick="Webaloo.onTileMenuButton(event, '{{ tile.id }}')"
+                    class="opacity-0 group-hover:opacity-100 focus:opacity-100 absolute top-1 right-1 w-6 h-6 rounded-md bg-slate-900/80 hover:bg-slate-900 text-slate-200 flex items-center justify-center shadow transition z-10"
+                    title="Tile actions">
+              <i data-lucide="more-horizontal" class="w-3.5 h-3.5"></i>
+            </button>
+
+            <!-- Embedded Tile JSON for instant modal editing -->
+            <script type="application/json" id="tile-data-{{ tile.id }}">{{ tile | tojson }}</script>
+          </div>
+          {% else %}
+          <!-- Unoccupied Interactive Empty Slot (REQ-GRID-003, REQ-TILE-003) -->
+          <div class="grid-slot empty-slot group relative rounded-xl border border-white/5 bg-white/[0.03] hover:bg-white/[0.09] hover:border-indigo-400/50 transition-all cursor-pointer flex items-center justify-center"
+               data-x="{{ x }}"
+               data-y="{{ y }}"
+               onclick="Webaloo.openCreateTileModal({{ x }}, {{ y }})"
+               ondragover="Webaloo.onSlotDragOver(event, {{ x }}, {{ y }})"
+               ondragleave="Webaloo.onSlotDragLeave(event)"
+               ondrop="Webaloo.onSlotDrop(event, {{ x }}, {{ y }})"
+               title="Empty slot ({{ x }}, {{ y }}) — Click to add tile">
+            <i data-lucide="plus" class="w-4 h-4 text-white/0 group-hover:text-white/50 transition-opacity pointer-events-none"></i>
+          </div>
+          {% endif %}
+        {% endfor %}
+      {% endfor %}
+    </div>
+  </main>
+
+  <!-- Current Webmix Metadata JSON for JS Modals -->
+  <script type="application/json" id="active-mix-data">{{ active_mix | tojson }}</script>
+  <script type="application/json" id="all-mixes-data">{{ mixes | tojson }}</script>
+</div>

@@ -1,0 +1,21 @@
+{
+  "id": "tradingview",
+  "name": "TradingView",
+  "url": "https://www.tradingview.com/chart/",
+  "x": 3,
+  "y": 2,
+  "w": 1,
+  "h": 1,
+  "bg_color": "#131722",
+  "text_color": "#ffffff",
+  "show_label": true,
+  "icon_type": "lucide",
+  "icon": "lucide:candlestick-chart",
+  "icon_url": null,
+  "monogram": "TV",
+  "tags": [
+    "trading",
+    "market"
+  ],
+  "target": "_blank"
+}

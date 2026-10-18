@@ -1,0 +1,29 @@
+/* Custom styles for Webaloo */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.grid-slot.drag-over-target {
+  outline: 2px dashed #6366f1;
+  outline-offset: -2px;
+  background-color: rgba(99, 102, 241, 0.22) !important;
+  transform: scale(1.03);
+}
+
+.occupied-slot.dragging-source {
+  opacity: 0.4;
+  transform: scale(0.95);
+}
+
+.mix-tab-item.tab-drag-over {
+  border-left: 3px solid #38bdf8;
+}
+
+.icon-mode-btn.active {
+  background-color: #4f46e5;
+  color: #ffffff;
+}

@@ -1,0 +1,21 @@
+{
+  "id": "google",
+  "name": "Google",
+  "url": "https://www.google.com",
+  "x": 0,
+  "y": 0,
+  "w": 1,
+  "h": 1,
+  "bg_color": "#1d4ed8",
+  "text_color": "#ffffff",
+  "show_label": true,
+  "icon_type": "lucide",
+  "icon": "lucide:search",
+  "icon_url": null,
+  "monogram": "GO",
+  "tags": [
+    "search",
+    "web"
+  ],
+  "target": "_blank"
+}
