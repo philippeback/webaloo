@@ -7,7 +7,7 @@ from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import Any
 
-from fastapi import FastAPI, File, HTTPException, Query, Request, UploadFile
+from fastapi import FastAPI, File, HTTPException, Query, Request, Response, UploadFile
 from fastapi.responses import FileResponse, HTMLResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
@@ -115,6 +115,31 @@ def create_app(root_dir: str | Path | None = None, enable_watcher: bool = True) 
 
     STATIC_DIR.mkdir(parents=True, exist_ok=True)
     app.mount("/static", StaticFiles(directory=str(STATIC_DIR)), name="static")
+
+    @app.get("/favicon.ico", include_in_schema=False)
+    @app.get("/favicon.png", include_in_schema=False)
+    async def serve_favicon(request: Request):
+        icon_path = STATIC_DIR / "favicon.png"
+        if not icon_path.is_file():
+            default_icon = storage.icons_dir / "127.png"
+            if default_icon.is_file():
+                icon_path = default_icon
+            else:
+                raise HTTPException(status_code=404, detail="Favicon not found")
+        stat = icon_path.stat()
+        etag = f'W/"{int(stat.st_mtime)}-{stat.st_size}"'
+        if_none_match = request.headers.get("if-none-match")
+        headers = {
+            "ETag": etag,
+            "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800",
+        }
+        if if_none_match and if_none_match.strip() == etag:
+            return Response(status_code=304, headers=headers)
+        return FileResponse(
+            icon_path,
+            media_type="image/png",
+            headers=headers,
+        )
 
     @app.get("/", response_class=HTMLResponse)
     async def index(request: Request):
@@ -355,12 +380,21 @@ def create_app(root_dir: str | Path | None = None, enable_watcher: bool = True) 
         }
 
     @app.get("/icons/{filename}")
-    async def serve_cached_icon(filename: str):
+    async def serve_cached_icon(filename: str, request: Request):
         safe_path = (storage.icons_dir / filename).resolve()
         if safe_path.parent != storage.icons_dir or not safe_path.is_file():
             raise HTTPException(status_code=404, detail="Icon not found")
+        stat = safe_path.stat()
+        etag = f'W/"{int(stat.st_mtime)}-{stat.st_size}"'
+        if_none_match = request.headers.get("if-none-match")
+        headers = {
+            "ETag": etag,
+            "Cache-Control": "public, max-age=604800, stale-while-revalidate=2592000",
+        }
+        if if_none_match and if_none_match.strip() == etag:
+            return Response(status_code=304, headers=headers)
         media_type, _ = mimetypes.guess_type(str(safe_path))
-        return FileResponse(safe_path, media_type=media_type or "application/octet-stream")
+        return FileResponse(safe_path, media_type=media_type or "application/octet-stream", headers=headers)
 
     @app.get("/api/search")
     async def api_search(q: str = Query(default="")):

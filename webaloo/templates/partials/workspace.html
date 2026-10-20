@@ -159,11 +159,11 @@
   </header>
 
   <!-- Symbaloo-Style Fixed 2D Spatial Grid (REQ-GRID-001, REQ-GRID-002, REQ-GRID-003) -->
-  <main class="flex-1 p-3 sm:p-5 overflow-auto flex items-center justify-center">
+  <main class="flex-1 p-4 sm:p-8 overflow-auto flex items-center justify-center">
     <div id="symbaloo-grid"
-         class="grid gap-2 sm:gap-2.5 w-full h-full max-w-[1600px] max-h-[960px] mx-auto"
-         style="grid-template-columns: repeat({{ active_mix.grid_cols }}, minmax(64px, 1fr));
-                grid-template-rows: repeat({{ active_mix.grid_rows }}, minmax(64px, 1fr));">
+         class="grid gap-3 sm:gap-3.5 mx-auto justify-center"
+         style="grid-template-columns: repeat({{ active_mix.grid_cols }}, 76px);
+                grid-template-rows: repeat({{ active_mix.grid_rows }}, 76px);">
       {% for y in range(active_mix.grid_rows) %}
         {% for x in range(active_mix.grid_cols) %}
           {% set tile = grid[y][x] %}
