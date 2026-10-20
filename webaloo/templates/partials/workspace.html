@@ -11,22 +11,75 @@
 
   <!-- Top Header / Webmix Tab Bar -->
   <header class="flex items-center justify-between px-4 py-2 bg-slate-900/85 backdrop-blur-md border-b border-slate-700/60 text-slate-100 z-20 shrink-0 gap-3">
-    <!-- Brand + Webmix Tabs -->
-    <div class="flex items-center gap-2 min-w-0 flex-1 overflow-x-auto no-scrollbar">
-      <a href="/" class="flex items-center gap-2 pr-3 border-r border-slate-700/70 shrink-0 group" title="Webaloo Home">
+    <!-- Brand + Webmix Tabs & Quick Switcher -->
+    <div class="flex items-center gap-1.5 min-w-0 flex-1">
+      <a href="/" class="flex items-center gap-2 pr-2.5 border-r border-slate-700/70 shrink-0 group" title="Webaloo Home">
         <div class="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-cyan-400 flex items-center justify-center shadow-md shadow-indigo-500/20">
           <i data-lucide="layout-grid" class="w-4 h-4 text-white"></i>
         </div>
-        <span class="font-bold tracking-tight text-base bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-300">Webaloo</span>
+        <span class="font-bold tracking-tight text-base bg-clip-text text-transparent bg-gradient-to-r from-white to-slate-300 hidden md:inline">Webaloo</span>
       </a>
 
+      <!-- Quick Webmix Dropdown Jump Menu -->
+      <div class="relative shrink-0">
+        <button type="button"
+                id="mix-switcher-btn"
+                onclick="Webaloo.toggleMixDropdown(event)"
+                class="flex items-center gap-1.5 px-2 py-1.5 rounded-lg bg-slate-800/80 hover:bg-slate-700 border border-slate-700/70 text-slate-200 text-xs font-medium transition"
+                title="All Webmixes ({{ mixes|length }})">
+          <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-400"></i>
+          <span class="hidden lg:inline">Mixes ({{ mixes|length }})</span>
+          <i data-lucide="chevron-down" class="w-3 h-3 text-slate-400"></i>
+        </button>
+
+        <!-- Dropdown panel -->
+        <div id="mix-switcher-dropdown"
+             class="hidden absolute left-0 top-full mt-1.5 w-64 max-h-96 rounded-xl bg-slate-900/95 backdrop-blur-md border border-slate-700/80 shadow-2xl py-2 z-50 flex flex-col">
+          <div class="px-2.5 pb-2 border-b border-slate-800">
+            <input type="text"
+                   id="mix-switcher-search"
+                   placeholder="Filter mixes..."
+                   oninput="Webaloo.filterMixDropdown(this.value)"
+                   class="w-full px-2.5 py-1 rounded-md bg-slate-800/90 border border-slate-700 text-xs text-white placeholder-slate-400 focus:outline-none focus:border-indigo-500" />
+          </div>
+          <div id="mix-switcher-list" class="overflow-y-auto flex-1 py-1 max-h-72">
+            {% for mix in mixes %}
+            {% set is_active = (mix.slug == active_mix.slug) %}
+            <a href="/mix/{{ mix.slug }}"
+               hx-get="/mix/{{ mix.slug }}"
+               hx-target="#workspace-root"
+               hx-swap="innerHTML"
+               hx-push-url="/mix/{{ mix.slug }}"
+               onclick="Webaloo.closeMixDropdown()"
+               data-mix-name="{{ mix.title|lower }}"
+               class="px-3 py-1.5 flex items-center justify-between text-xs transition {{ 'bg-indigo-600/30 text-white font-semibold' if is_active else 'text-slate-300 hover:bg-slate-800 hover:text-white' }}">
+              <span class="truncate">{{ mix.title }}</span>
+              {% if is_active %}
+              <span class="w-1.5 h-1.5 rounded-full bg-indigo-400 shrink-0"></span>
+              {% endif %}
+            </a>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+
+      <!-- Tab Scroll Left Button -->
+      <button type="button"
+              onclick="Webaloo.scrollTabs('left')"
+              class="p-1 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-white transition shrink-0"
+              title="Scroll webmix tabs left">
+        <i data-lucide="chevron-left" class="w-4 h-4"></i>
+      </button>
+
       <!-- Draggable Webmix Tabs (REQ-MIX-001, REQ-MIX-002, REQ-MIX-005) -->
-      <nav id="webmix-tabs" class="flex items-center gap-1.5 overflow-x-auto py-0.5" aria-label="Webmixes">
+      <nav id="webmix-tabs"
+           class="flex items-center gap-1.5 overflow-x-auto py-0.5 no-scrollbar flex-1 min-w-0"
+           aria-label="Webmixes">
         {% for mix in mixes %}
         {% set is_active = (mix.slug == active_mix.slug) %}
         <div class="mix-tab-item group relative flex items-center rounded-lg text-sm font-medium transition-all cursor-pointer shrink-0
                     {% if is_active %}
-                      bg-indigo-600 text-white shadow-sm shadow-indigo-500/30
+                      bg-indigo-600 text-white shadow-sm shadow-indigo-500/30 is-active-tab
                     {% else %}
                       bg-slate-800/70 text-slate-300 hover:bg-slate-700/70 hover:text-white
                     {% endif %}"
@@ -54,15 +107,24 @@
           {% endif %}
         </div>
         {% endfor %}
-
-        <button type="button"
-                onclick="Webaloo.openCreateMixModal()"
-                class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800/50 hover:bg-slate-700/80 text-slate-300 hover:text-white border border-dashed border-slate-600/70 transition shrink-0"
-                title="Create New Webmix">
-          <i data-lucide="plus" class="w-3.5 h-3.5"></i>
-          <span>New Mix</span>
-        </button>
       </nav>
+
+      <!-- Tab Scroll Right Button -->
+      <button type="button"
+              onclick="Webaloo.scrollTabs('right')"
+              class="p-1 rounded-lg bg-slate-800/60 hover:bg-slate-700 text-slate-400 hover:text-white transition shrink-0"
+              title="Scroll webmix tabs right">
+        <i data-lucide="chevron-right" class="w-4 h-4"></i>
+      </button>
+
+      <!-- Pinned New Mix Button -->
+      <button type="button"
+              onclick="Webaloo.openCreateMixModal()"
+              class="flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium bg-slate-800/70 hover:bg-slate-700 text-slate-300 hover:text-white border border-dashed border-slate-600/70 transition shrink-0"
+              title="Create New Webmix">
+        <i data-lucide="plus" class="w-3.5 h-3.5"></i>
+        <span class="hidden sm:inline">New Mix</span>
+      </button>
     </div>
 
     <!-- Right Controls: Sync Indicator, Search Bar (Ctrl+K), Board Info -->

@@ -5,7 +5,7 @@
 | **Document ID** | `WEBALOO-UG-001` |
 | **Version** | `1.0.1` |
 | **Target Audience** | Power Users, Developers, System Administrators |
-| **Companion Docs** | [README.md](file:///C:/Dev/github/philippeback/webaloo/README.md), [WebalooSpec.md](file:///C:/Dev/github/philippeback/webaloo/WebalooSpec.md), [WebalooEARS-Spec.md](file:///C:/Dev/github/philippeback/webaloo/WebalooEARS-Spec.md), [sdi.md](file:///C:/Dev/github/philippeback/webaloo/sdi.md) |
+| **Companion Docs** | [README.md](README.md), [WebalooSpec.md](WebalooSpec.md), [WebalooEARS-Spec.md](WebalooEARS-Spec.md), [sdi.md](sdi.md) |
 
 ---
 
@@ -70,7 +70,7 @@ uv sync
 
 ### 2.3 Configuration Precedence Hierarchy
 
-Webaloo resolves configuration deterministically in [`resolve_config`](file:///C:/Dev/github/philippeback/webaloo/webaloo/__main__.py#L36-L42) using strict three-tier precedence:
+Webaloo resolves configuration deterministically in [`resolve_config`](webaloo/__main__.py#L36-L42) using strict three-tier precedence:
 
 ```text
 Tier 1: CLI Flag (--dir, --host, --port)  ≻  Tier 2: Environment Variable (WEBALOO_*)  ≻  Tier 3: Built-in Default

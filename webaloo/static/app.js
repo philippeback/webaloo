@@ -207,6 +207,72 @@ const Webaloo = (() => {
     document.querySelectorAll(".tab-drag-over").forEach((el) => el.classList.remove("tab-drag-over"));
   }
 
+  // --- Tab Bar Navigation & Quick Switcher Controls ---
+  function scrollTabs(direction) {
+    const nav = document.getElementById("webmix-tabs");
+    if (!nav) return;
+    const scrollAmount = Math.max(200, nav.clientWidth * 0.6);
+    nav.scrollBy({
+      left: direction === "left" ? -scrollAmount : scrollAmount,
+      behavior: "smooth",
+    });
+  }
+
+  function scrollActiveTabIntoView() {
+    const activeTab = document.querySelector("#webmix-tabs .is-active-tab");
+    if (activeTab) {
+      activeTab.scrollIntoView({ behavior: "auto", block: "nearest", inline: "center" });
+    }
+  }
+
+  function toggleMixDropdown(event) {
+    if (event) event.stopPropagation();
+    const dropdown = document.getElementById("mix-switcher-dropdown");
+    if (!dropdown) return;
+    const isHidden = dropdown.classList.contains("hidden");
+    if (isHidden) {
+      dropdown.classList.remove("hidden");
+      const search = document.getElementById("mix-switcher-search");
+      if (search) {
+        search.value = "";
+        filterMixDropdown("");
+        setTimeout(() => search.focus(), 50);
+      }
+    } else {
+      dropdown.classList.add("hidden");
+    }
+  }
+
+  function closeMixDropdown() {
+    const dropdown = document.getElementById("mix-switcher-dropdown");
+    if (dropdown) dropdown.classList.add("hidden");
+  }
+
+  function filterMixDropdown(query) {
+    const q = (query || "").toLowerCase().trim();
+    const items = document.querySelectorAll("#mix-switcher-list a");
+    items.forEach((item) => {
+      const name = item.getAttribute("data-mix-name") || "";
+      if (!q || name.includes(q)) {
+        item.classList.remove("hidden");
+      } else {
+        item.classList.add("hidden");
+      }
+    });
+  }
+
+  function initTabBarWheelScroll() {
+    const nav = document.getElementById("webmix-tabs");
+    if (!nav) return;
+    nav.addEventListener("wheel", (e) => {
+      // If user is scrolling vertically, convert deltaY to horizontal scroll
+      if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+        e.preventDefault();
+        nav.scrollLeft += e.deltaY;
+      }
+    }, { passive: false });
+  }
+
   // --- Right-Click & Hover Context Menu (REQ-TILE-006..011) ---
   function onTileContextMenu(event, tileId) {
     event.preventDefault();
@@ -391,6 +457,13 @@ const Webaloo = (() => {
     document.getElementById("tile-bg-color").value = hex;
     if (/^#[0-9a-fA-F]{6}$/.test(hex)) {
       document.getElementById("tile-bg-picker").value = hex;
+      // Auto-suggest contrasting text color if user hasn't explicitly customized it
+      const r = parseInt(hex.slice(1, 3), 16);
+      const g = parseInt(hex.slice(3, 5), 16);
+      const b = parseInt(hex.slice(5, 7), 16);
+      const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      const suggestedText = lum > 0.6 ? "#0f172a" : "#ffffff";
+      setTileTextColor(suggestedText);
     }
     updateTilePreview();
   }
@@ -917,15 +990,26 @@ const Webaloo = (() => {
     if (menu && !menu.classList.contains("hidden") && !menu.contains(event.target)) {
       hideContextMenu();
     }
+    const mixSwitcher = document.getElementById("mix-switcher-dropdown");
+    const switcherBtn = document.getElementById("mix-switcher-btn");
+    if (mixSwitcher && !mixSwitcher.classList.contains("hidden")) {
+      if (!mixSwitcher.contains(event.target) && (!switcherBtn || !switcherBtn.contains(event.target))) {
+        closeMixDropdown();
+      }
+    }
   });
 
   document.body.addEventListener("htmx:afterSwap", () => {
     refreshIcons();
+    initTabBarWheelScroll();
+    scrollActiveTabIntoView();
   });
 
   document.addEventListener("DOMContentLoaded", () => {
     refreshIcons();
     initSSE();
+    initTabBarWheelScroll();
+    scrollActiveTabIntoView();
   });
 
   return {
@@ -939,6 +1023,10 @@ const Webaloo = (() => {
     onTabDragOver,
     onTabDrop,
     onTabDragEnd,
+    scrollTabs,
+    toggleMixDropdown,
+    closeMixDropdown,
+    filterMixDropdown,
     onTileContextMenu,
     onTileMenuButton,
     ctxEditTile,

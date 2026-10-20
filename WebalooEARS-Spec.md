@@ -1,6 +1,6 @@
 # Webaloo Requirements Specification (EARS)
 
-This document formalizes the requirements from [WebalooSpec.md](file:///C:/Dev/github/philippeback/webaloo/WebalooSpec.md) using the **Easy Approach to Requirements Syntax (EARS)**.
+This document formalizes the requirements from [WebalooSpec.md](WebalooSpec.md) using the **Easy Approach to Requirements Syntax (EARS)**.
 
 ---
 

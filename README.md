@@ -75,8 +75,8 @@ uv run pytest -v
 
 ## Documentation
 
-- [**User & Operations Guide (`user_guide.md`)**](file:///C:/Dev/github/philippeback/webaloo/user_guide.md) — Complete operational manual, keyboard shortcuts, UI workflows, and VS Code / Git editing guide.
-- [**Software Design & Implementation (`sdi.md`)**](file:///C:/Dev/github/philippeback/webaloo/sdi.md) — Architectural invariants, state machines, spatial algorithms, API contracts, and full EARS traceability matrix.
-- [**Functional Specification (`WebalooSpec.md`)**](file:///C:/Dev/github/philippeback/webaloo/WebalooSpec.md) — Data model, UX mechanics, and HTTP endpoint overview.
-- [**EARS Requirements (`WebalooEARS-Spec.md`)**](file:///C:/Dev/github/philippeback/webaloo/WebalooEARS-Spec.md) — Formal Easy Approach to Requirements Syntax specification (`REQ-FS`, `REQ-MIX`, `REQ-GRID`, `REQ-TILE`, `REQ-ICON`, `REQ-SRCH`, `REQ-SYNC`).
-- [**Original Briefing (`Briefing.md`)**](file:///C:/Dev/github/philippeback/webaloo/Briefing.md) — Architectural concept and motivation.
+- [**User & Operations Guide (`user_guide.md`)**](user_guide.md) — Complete operational manual, keyboard shortcuts, UI workflows, and VS Code / Git editing guide.
+- [**Software Design & Implementation (`sdi.md`)**](sdi.md) — Architectural invariants, state machines, spatial algorithms, API contracts, and full EARS traceability matrix.
+- [**Functional Specification (`WebalooSpec.md`)**](WebalooSpec.md) — Data model, UX mechanics, and HTTP endpoint overview.
+- [**EARS Requirements (`WebalooEARS-Spec.md`)**](WebalooEARS-Spec.md) — Formal Easy Approach to Requirements Syntax specification (`REQ-FS`, `REQ-MIX`, `REQ-GRID`, `REQ-TILE`, `REQ-ICON`, `REQ-SRCH`, `REQ-SYNC`).
+- [**Original Briefing (`Briefing.md`)**](Briefing.md) — Architectural concept and motivation.

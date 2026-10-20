@@ -27,7 +27,7 @@ dev = [
 webaloo = "webaloo.__main__:main"
 
 [tool.setuptools.packages.find]
-include = ["webaloo*"]
+include = ["webaloo*", "webmiximport*"]
 
 [tool.setuptools.package-data]
 webaloo = ["templates/**/*", "static/**/*"]

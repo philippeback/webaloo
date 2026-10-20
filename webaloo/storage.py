@@ -40,6 +40,19 @@ def generate_monogram(name: str, url: str = "") -> str:
     return "WB"
 
 
+def get_contrast_text_color(hex_color: str | None, default: str = "#ffffff") -> str:
+    """Determine contrasting text color (#0f172a or #ffffff) for a given hex background."""
+    if not hex_color:
+        return default
+    m = re.match(r"^#?([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})", hex_color.strip())
+    if not m:
+        return default
+    r, g, b = int(m.group(1), 16), int(m.group(2), 16), int(m.group(3), 16)
+    # Relative luminance calculation (WCAG standard)
+    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    return "#0f172a" if luminance > 0.6 else "#ffffff"
+
+
 class BoardFullError(Exception):
     """Raised when a webmix has no free grid slots remaining."""
 
@@ -522,6 +535,9 @@ class Storage:
         desired_slug = str(data.get("slug") or "").strip() or name
         tile_id = self._unique_tile_id(mix_dir, desired_slug)
 
+        bg_color = str(data.get("bg_color") or "#1e293b")
+        text_color = str(data.get("text_color") or get_contrast_text_color(bg_color))
+
         tile_dict = {
             "id": tile_id,
             "name": name,
@@ -530,8 +546,8 @@ class Storage:
             "y": y,
             "w": int(data.get("w", 1)),
             "h": int(data.get("h", 1)),
-            "bg_color": str(data.get("bg_color") or "#1e293b"),
-            "text_color": str(data.get("text_color") or "#ffffff"),
+            "bg_color": bg_color,
+            "text_color": text_color,
             "show_label": bool(data.get("show_label", True)),
             "icon_type": str(data.get("icon_type") or "monogram"),
             "icon": data.get("icon") or None,
