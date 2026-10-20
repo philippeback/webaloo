@@ -119,13 +119,11 @@ def create_app(root_dir: str | Path | None = None, enable_watcher: bool = True) 
     @app.get("/favicon.ico", include_in_schema=False)
     @app.get("/favicon.png", include_in_schema=False)
     async def serve_favicon(request: Request):
-        icon_path = STATIC_DIR / "favicon.png"
+        icon_path = STATIC_DIR / ("favicon.ico" if request.url.path.endswith(".ico") else "favicon.png")
         if not icon_path.is_file():
-            default_icon = storage.icons_dir / "127.png"
-            if default_icon.is_file():
-                icon_path = default_icon
-            else:
-                raise HTTPException(status_code=404, detail="Favicon not found")
+            icon_path = STATIC_DIR / "favicon.png"
+        if not icon_path.is_file():
+            raise HTTPException(status_code=404, detail="Favicon not found")
         stat = icon_path.stat()
         etag = f'W/"{int(stat.st_mtime)}-{stat.st_size}"'
         if_none_match = request.headers.get("if-none-match")
@@ -135,9 +133,10 @@ def create_app(root_dir: str | Path | None = None, enable_watcher: bool = True) 
         }
         if if_none_match and if_none_match.strip() == etag:
             return Response(status_code=304, headers=headers)
+        media_type = "image/x-icon" if icon_path.suffix == ".ico" else "image/png"
         return FileResponse(
             icon_path,
-            media_type="image/png",
+            media_type=media_type,
             headers=headers,
         )
 
